@@ -1,5 +1,5 @@
 const express = require("express");
-const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const { v4 } = require("uuid");
 const validator = require("validator");
@@ -8,7 +8,13 @@ const path = require("path");
 const { configDotenv } = require("dotenv");
 const cors = require("cors");
 const app = express();
-const server = http.createServer(app);
+
+//https cert & key files
+
+const key = fs.readFileSync("cert.key");
+const cert = fs.readFileSync("cert.crt");
+
+const server = https.createServer({ key, cert }, app);
 const io = new Server(server, {
   cors: { origin: "*" },
   maxHttpBufferSize: 1e8,
