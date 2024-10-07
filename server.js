@@ -1,5 +1,5 @@
 const express = require("express");
-const https = require("https");
+const http = require("http");
 const { Server } = require("socket.io");
 const { v4 } = require("uuid");
 const validator = require("validator");
@@ -11,10 +11,10 @@ const app = express();
 
 //https cert & key files
 
-const key = fs.readFileSync("cert.key");
-const cert = fs.readFileSync("cert.crt");
+// const key = fs.readFileSync("cert.key");
+// const cert = fs.readFileSync("cert.crt");
 
-const server = https.createServer({ key, cert }, app);
+const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
   maxHttpBufferSize: 1e8,
@@ -30,7 +30,7 @@ app.use("/file", require("./routes/downloadRoute"));
 //env variables
 const dev = process.env.NODE_ENV !== "production";
 const hostname = process.env.HOSTNAME;
-const port = process.env.PORT || 3001;
+const port = process.env.PORT || 443;
 
 //validate username
 const validUsername = (username) => {
