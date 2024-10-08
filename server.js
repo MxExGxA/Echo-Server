@@ -1,5 +1,5 @@
 const express = require("express");
-const http = require("http");
+const https = require("https");
 const { Server } = require("socket.io");
 const { v4 } = require("uuid");
 const validator = require("validator");
@@ -10,11 +10,13 @@ const cors = require("cors");
 const app = express();
 
 //https cert & key files
+const https_options = {
+  key: fs.readFileSync("ssl/private.key"),
+  cert: fs.readFileSync("ssl/certificate.crt"),
+  ca: fs.readFileSync("ssl/ca_bundle.crt"),
+};
 
-// const key = fs.readFileSync("cert.key");
-// const cert = fs.readFileSync("cert.crt");
-
-const server = http.createServer(app);
+const server = https.createServer(https_options, app);
 const io = new Server(server, {
   cors: { origin: "*" },
   maxHttpBufferSize: 1e8,
