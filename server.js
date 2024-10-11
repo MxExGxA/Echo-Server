@@ -1,5 +1,5 @@
 const express = require("express");
-const https = require("https");
+const http = require("http");
 const { Server } = require("socket.io");
 const { v4 } = require("uuid");
 const validator = require("validator");
@@ -8,6 +8,7 @@ const path = require("path");
 const { configDotenv } = require("dotenv");
 const cors = require("cors");
 const app = express();
+const sdpTransform = require("sdp-transform");
 
 //https cert & key files
 const https_options = {
@@ -16,7 +17,7 @@ const https_options = {
   ca: fs.readFileSync("ssl/ca_bundle.crt"),
 };
 
-const server = https.createServer(https_options, app);
+const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: "*" },
   maxHttpBufferSize: 1e8,
@@ -128,6 +129,7 @@ io.on("connection", (socket) => {
               mic: { id: "", toggle: false },
             },
           },
+          negotiationList: [],
         };
         socket.emit("echoCreated", echos[opts.echoID]);
       } else {

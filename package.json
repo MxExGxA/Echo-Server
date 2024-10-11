@@ -3,6 +3,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "sdp-transform": "^2.14.2",
     "socket.io": "^4.8.0",
     "uuid": "^10.0.0",
     "validator": "^13.12.0"
