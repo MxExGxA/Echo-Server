@@ -8,7 +8,6 @@ const path = require("path");
 const { configDotenv } = require("dotenv");
 const cors = require("cors");
 const app = express();
-const sdpTransform = require("sdp-transform");
 
 //https cert & key files
 const https_options = {
@@ -129,7 +128,6 @@ io.on("connection", (socket) => {
               mic: { id: "", toggle: false },
             },
           },
-          negotiationList: [],
         };
         socket.emit("echoCreated", echos[opts.echoID]);
       } else {

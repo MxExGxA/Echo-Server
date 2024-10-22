@@ -1,8 +1,9 @@
-const path = require("path");
-const process = require("process");
-const fs = require("fs");
+import * as path from "path";
+import * as process from "process";
+import * as fs from "fs";
+import { Request, Response } from "express";
 
-const fileDownload = async (req, res) => {
+const fileDownload = async (req: Request, res: Response) => {
   const filePath = path.join(
     process.cwd(),
     "tmp",
@@ -20,4 +21,4 @@ const fileDownload = async (req, res) => {
   });
 };
 
-module.exports = fileDownload;
+export default fileDownload;
