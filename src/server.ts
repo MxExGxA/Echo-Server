@@ -1,5 +1,5 @@
 import express from "express";
-import * as http from "http";
+import * as https from "https";
 import { Server, Socket } from "socket.io";
 import { configDotenv } from "dotenv";
 import cors from "cors";
@@ -26,6 +26,7 @@ import {
 } from "./utils/mediasoup/helpers";
 import { config } from "./lib/mediasoup/config";
 import { types as mediaSoupTypes } from "mediasoup";
+import https_options from "./lib/ssl/httpsOptions";
 
 //configure dot env variables
 configDotenv();
@@ -34,7 +35,7 @@ configDotenv();
 const app = express();
 
 //create http server
-const server = http.createServer(app);
+const server = https.createServer(https_options, app);
 
 //configure cors
 app.use(cors());

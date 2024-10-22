@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const http = __importStar(require("http"));
+const https = __importStar(require("https"));
 const socket_io_1 = require("socket.io");
 const dotenv_1 = require("dotenv");
 const cors_1 = __importDefault(require("cors"));
@@ -44,12 +44,13 @@ const fileRoute_1 = __importDefault(require("./routes/fileRoute"));
 const helpers_1 = require("./utils/echo/helpers");
 const helpers_2 = require("./utils/mediasoup/helpers");
 const config_1 = require("./lib/mediasoup/config");
+const httpsOptions_1 = __importDefault(require("./lib/ssl/httpsOptions"));
 //configure dot env variables
 (0, dotenv_1.configDotenv)();
 //create express app
 const app = (0, express_1.default)();
 //create http server
-const server = http.createServer(app);
+const server = https.createServer(httpsOptions_1.default, app);
 //configure cors
 app.use((0, cors_1.default)());
 //file download route
