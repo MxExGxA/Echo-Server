@@ -148,7 +148,7 @@ const io = new socket_io_1.Server(server, {
                 callback({ status: state ? "success" : "failed" });
             }));
             //starting produce
-            socketWithEcho.on("produce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ kind, rtpParameters }, callback) {
+            socketWithEcho.on("produce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ kind, rtpParameters, appData }, callback) {
                 try {
                     //create producer with kind and rtp received from client
                     const producer = yield producerTransport.produce({
@@ -157,10 +157,14 @@ const io = new socket_io_1.Server(server, {
                     });
                     callback({ id: producer.id });
                     //push producer to user producers array
-                    echos[socketWithEcho.echo].producers[socketWithEcho.id].push(producer.id);
+                    echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
+                        id: producer.id,
+                        appData: Object.assign({}, appData),
+                    });
                     //notify echo members
                     socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
                         kind,
+                        appData,
                         producerId: producer.id,
                         memberID: socketWithEcho.id,
                         rtpParameters: producer.rtpParameters,
@@ -199,7 +203,7 @@ const io = new socket_io_1.Server(server, {
                         const consumer = yield consumerTransport.consume({
                             producerId,
                             rtpCapabilities,
-                            paused: true,
+                            paused: false,
                         });
                         callback({
                             consumerId: consumer.id,
@@ -207,9 +211,6 @@ const io = new socket_io_1.Server(server, {
                             kind: consumer.kind,
                             rtpParameters: consumer.rtpParameters,
                         });
-                        socketWithEcho.on("resumeConsumer", () => __awaiter(void 0, void 0, void 0, function* () {
-                            yield consumer.resume();
-                        }));
                     }
                 }
                 catch (err) {

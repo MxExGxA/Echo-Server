@@ -187,24 +187,25 @@ const io: Server = new Server(server, {
       //starting produce
       socketWithEcho.on(
         "produce",
-        async ({ kind, rtpParameters }, callback) => {
+        async ({ kind, rtpParameters, appData }, callback) => {
           try {
             //create producer with kind and rtp received from client
             const producer = await producerTransport.produce({
               kind,
               rtpParameters,
             });
-
             callback({ id: producer.id });
 
             //push producer to user producers array
-            echos[socketWithEcho.echo].producers[socketWithEcho.id].push(
-              producer.id
-            );
+            echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
+              id: producer.id,
+              appData: { ...appData },
+            });
 
             //notify echo members
             socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
               kind,
+              appData,
               producerId: producer.id,
               memberID: socketWithEcho.id,
               rtpParameters: producer.rtpParameters,
@@ -262,7 +263,7 @@ const io: Server = new Server(server, {
               const consumer = await consumerTransport.consume({
                 producerId,
                 rtpCapabilities,
-                paused: true,
+                paused: false,
               });
 
               callback({
@@ -271,10 +272,6 @@ const io: Server = new Server(server, {
                 kind: consumer.kind,
                 rtpParameters: consumer.rtpParameters,
               });
-
-              socketWithEcho.on("resumeConsumer", async () => {
-                await consumer.resume();
-              });
             }
           } catch (err) {
             callback({ error: err });
@@ -282,6 +279,7 @@ const io: Server = new Server(server, {
         }
       );
     });
+
     //screen sharing
     socketWithEcho.on("screenShare", (opts) => {
       io.to(opts.echoID).emit("screenShare", opts);

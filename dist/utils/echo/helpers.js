@@ -47,7 +47,7 @@ const config_1 = require("../../lib/mediasoup/config");
  * @param echos all echos object
  */
 const handleSocketDisconnect = (socket, io, echo, echos) => {
-    var _a, _b;
+    var _a, _b, _c, _d;
     console.log("Socket has Disconnected,", socket.id);
     try {
         if (echo) {
@@ -62,10 +62,16 @@ const handleSocketDisconnect = (socket, io, echo, echos) => {
             });
             //remove the member who left from this echo members array
             echo.members = (_a = echo.members) === null || _a === void 0 ? void 0 : _a.filter((m) => m.id !== socket.id);
+            //close user transports
+            (_b = echo.transports[socket.id].producerTransport) === null || _b === void 0 ? void 0 : _b.close();
+            (_c = echo.transports[socket.id].consumerTransport) === null || _c === void 0 ? void 0 : _c.close();
             //delete his media properties also
             delete echo.media[socket.id];
+            //delete user transports and producers
+            delete echo.transports[socket.id];
+            delete echo.producers[socket.id];
             //get the admin of this echo
-            const admin = (_b = echo.members) === null || _b === void 0 ? void 0 : _b.find((member) => member.isAdmin);
+            const admin = (_d = echo.members) === null || _d === void 0 ? void 0 : _d.find((member) => member.isAdmin);
             //get the echo members array length
             const membersLen = echo.members.length;
             //if the admin has left, promote the first member in the array to admin

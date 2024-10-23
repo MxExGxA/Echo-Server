@@ -46,8 +46,16 @@ export const handleSocketDisconnect = (
       //remove the member who left from this echo members array
       echo.members = echo.members?.filter((m) => m.id !== socket.id);
 
+      //close user transports
+      echo.transports[socket.id].producerTransport?.close();
+      echo.transports[socket.id].consumerTransport?.close();
+
       //delete his media properties also
       delete echo.media[socket.id];
+
+      //delete user transports and producers
+      delete echo.transports[socket.id];
+      delete echo.producers[socket.id];
 
       //get the admin of this echo
       const admin = echo.members?.find((member) => member.isAdmin);
