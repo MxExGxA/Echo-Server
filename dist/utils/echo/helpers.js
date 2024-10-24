@@ -32,7 +32,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.handleEditorCodeChange = exports.handleEditorLangChange = exports.handleUploadFile = exports.handleMessaging = exports.handleKickMember = exports.handleRequestApproved = exports.handleRequestDenied = exports.handleJoinEcho = exports.handleCreateEcho = exports.handleSocketDisconnect = void 0;
+exports.handleEditorCodeChange = exports.handleEditorLangChange = exports.handleUploadFile = exports.handleMessaging = exports.handleKickMember = exports.handleMakeAdmin = exports.handleRequestApproved = exports.handleRequestDenied = exports.handleJoinEcho = exports.handleCreateEcho = exports.handleSocketDisconnect = void 0;
 const fs = __importStar(require("fs"));
 const path = __importStar(require("path"));
 const validation_1 = require("../user/validation");
@@ -280,6 +280,32 @@ const handleRequestApproved = (opts, io, socket, echo) => {
     }
 };
 exports.handleRequestApproved = handleRequestApproved;
+//handle make admin function
+/**
+ *
+ * @param opts options
+ * @param io socket server instance
+ * @param socket socket
+ */
+const handleMakeAdmin = (opts, io, socket, echo) => {
+    const admin = echo.members.find((member) => member.isAdmin);
+    if ((admin === null || admin === void 0 ? void 0 : admin.id) === socket.id) {
+        const member = echo.members.find((member) => member.id === opts.member.id);
+        member.isAdmin = true;
+        admin.isAdmin = false;
+        echo.messages.push({
+            type: "info",
+            fromID: member.id,
+            fromName: member.name,
+            message: "promoted to admin",
+        });
+        io.to(opts.echoID).emit("makeAdmin", {
+            members: echo.members,
+            messages: echo.messages,
+        });
+    }
+};
+exports.handleMakeAdmin = handleMakeAdmin;
 //handle kick member function
 /**
  *

@@ -302,6 +302,37 @@ export const handleRequestApproved = (
   }
 };
 
+//handle make admin function
+/**
+ *
+ * @param opts options
+ * @param io socket server instance
+ * @param socket socket
+ */
+export const handleMakeAdmin = (
+  opts: { echoID: string; member: { id: string } },
+  io: Server,
+  socket: SocketWithEchoType,
+  echo: EchoType
+) => {
+  const admin = echo.members.find((member) => member.isAdmin);
+  if (admin?.id === socket.id) {
+    const member = echo.members.find((member) => member.id === opts.member.id);
+    member!.isAdmin = true;
+    admin.isAdmin = false;
+    echo.messages.push({
+      type: "info",
+      fromID: member!.id,
+      fromName: member!.name,
+      message: "promoted to admin",
+    });
+    io.to(opts.echoID).emit("makeAdmin", {
+      members: echo.members,
+      messages: echo.messages,
+    });
+  }
+};
+
 //handle kick member function
 /**
  *

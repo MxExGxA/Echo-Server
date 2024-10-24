@@ -11,6 +11,7 @@ import {
   handleEditorLangChange,
   handleJoinEcho,
   handleKickMember,
+  handleMakeAdmin,
   handleMessaging,
   handleRequestApproved,
   handleRequestDenied,
@@ -105,6 +106,11 @@ const io: Server = new Server(server, {
     //handle join request approved
     socket.on("requestApproved", (opts) => {
       handleRequestApproved(opts, io, socketWithEcho, echos[opts.echoID]);
+    });
+
+    //handle make admin
+    socket.on("makeAdmin", (opts) => {
+      handleMakeAdmin(opts, io, socketWithEcho, echos[opts.echoID]);
     });
 
     //handle kick echo member

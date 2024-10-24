@@ -95,6 +95,10 @@ const io = new socket_io_1.Server(server, {
         socket.on("requestApproved", (opts) => {
             (0, helpers_1.handleRequestApproved)(opts, io, socketWithEcho, echos[opts.echoID]);
         });
+        //handle make admin
+        socket.on("makeAdmin", (opts) => {
+            (0, helpers_1.handleMakeAdmin)(opts, io, socketWithEcho, echos[opts.echoID]);
+        });
         //handle kick echo member
         socket.on("kickMember", (opts) => {
             (0, helpers_1.handleKickMember)(opts, io, socketWithEcho, echos);

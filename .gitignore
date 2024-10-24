@@ -1,4 +1,4 @@
 node_modules
 .env
-SSL
+ssl_certs
 tmp
