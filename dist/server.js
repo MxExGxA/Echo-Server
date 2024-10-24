@@ -164,6 +164,7 @@ const io = new socket_io_1.Server(server, {
                     echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
                         id: producer.id,
                         appData: Object.assign({}, appData),
+                        kind: producer.kind,
                     });
                     //notify echo members
                     socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
@@ -221,6 +222,22 @@ const io = new socket_io_1.Server(server, {
                     callback({ error: err });
                 }
             }));
+        }));
+        //restarting ice on connection failed or disconnected
+        socketWithEcho.on("restartIce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ type }, callback) {
+            let transport;
+            if (type === "producer") {
+                transport =
+                    echos[socketWithEcho.echo].transports[socketWithEcho.id]
+                        .producerTransport;
+            }
+            else if (type === "consumer") {
+                transport =
+                    echos[socketWithEcho.echo].transports[socketWithEcho.id]
+                        .consumerTransport;
+            }
+            const iceParams = yield (transport === null || transport === void 0 ? void 0 : transport.restartIce());
+            callback({ iceParams });
         }));
         //screen sharing
         socketWithEcho.on("screenShare", (opts) => {

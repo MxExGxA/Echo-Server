@@ -38,7 +38,7 @@ export interface transportsType {
 }
 
 export interface producersType {
-  [id: string]: ({ id: string; appData: {} } | null)[];
+  [id: string]: ({ id: string; appData: {}; kind: "audio" | "video" } | null)[];
 }
 
 export interface EchoType {

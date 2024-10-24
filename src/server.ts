@@ -206,6 +206,7 @@ const io: Server = new Server(server, {
             echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
               id: producer.id,
               appData: { ...appData },
+              kind: producer.kind,
             });
 
             //notify echo members
@@ -284,6 +285,22 @@ const io: Server = new Server(server, {
           }
         }
       );
+    });
+    //restarting ice on connection failed or disconnected
+    socketWithEcho.on("restartIce", async ({ type }, callback) => {
+      let transport;
+      if (type === "producer") {
+        transport =
+          echos[socketWithEcho.echo].transports[socketWithEcho.id]
+            .producerTransport;
+      } else if (type === "consumer") {
+        transport =
+          echos[socketWithEcho.echo].transports[socketWithEcho.id]
+            .consumerTransport;
+      }
+      const iceParams = await transport?.restartIce();
+
+      callback({ iceParams });
     });
 
     //screen sharing
