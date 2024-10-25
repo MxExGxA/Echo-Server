@@ -69,10 +69,5 @@ export const connectTransport = async (
   transport: mediaSoupTypes.WebRtcTransport,
   dtlsParameters: mediaSoupTypes.DtlsParameters
 ) => {
-  try {
-    await transport.connect({ dtlsParameters });
-    return true;
-  } catch (err) {
-    return false;
-  }
+  await transport.connect({ dtlsParameters });
 };

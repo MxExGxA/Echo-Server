@@ -166,62 +166,69 @@ const io: Server = new Server(server, {
      * Producer Transport process
      */
     socketWithEcho.on("createProducerTransport", async (callback) => {
-      //create producer transport
-      const { transport, params } = await createTransport(
-        echos[socketWithEcho.echo].router
-      );
-      const producerTransport = transport;
-      callback(params);
+      try {
+        //create producer transport
+        const { transport, params } = await createTransport(
+          echos[socketWithEcho.echo].router
+        );
+        const producerTransport = transport;
+        callback(params);
 
-      //add the producer transport to echo object
-      echos[socketWithEcho.echo].transports[
-        socketWithEcho.id
-      ].producerTransport = producerTransport;
+        //add the producer transport to echo object
+        echos[socketWithEcho.echo].transports[
+          socketWithEcho.id
+        ].producerTransport = producerTransport;
 
-      //connecting the producer transport
-      socketWithEcho.on(
-        "connectProducerTransport",
-        async ({ dtlsParameters }, callback) => {
-          const state = await connectTransport(
-            producerTransport,
-            dtlsParameters
-          );
-          callback({ status: state ? "success" : "failed" });
-        }
-      );
-
-      //starting produce
-      socketWithEcho.on(
-        "produce",
-        async ({ kind, rtpParameters, appData }, callback) => {
-          try {
-            //create producer with kind and rtp received from client
-            const producer = await producerTransport.produce({
-              kind,
-              rtpParameters,
-            });
-            callback({ id: producer.id });
-
-            //push producer to user producers array
-            echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
-              id: producer.id,
-              appData: { ...appData },
-              kind: producer.kind,
-            });
-
-            //notify echo members
-            socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
-              kind,
-              appData,
-              producerId: producer.id,
-              memberID: socketWithEcho.id,
-              rtpParameters: producer.rtpParameters,
-            });
-          } catch (err) {
-            console.log(err);
+        //connecting the producer transport
+        socketWithEcho.on(
+          "connectProducerTransport",
+          async ({ dtlsParameters }, callback) => {
+            try {
+              await connectTransport(producerTransport, dtlsParameters);
+              callback({ status: "success" });
+            } catch (err) {
+              callback({ error: err });
+            }
           }
-        }
-      );
+        );
+
+        //starting produce
+        socketWithEcho.on(
+          "produce",
+          async ({ kind, rtpParameters, appData }, callback) => {
+            try {
+              //create producer with kind and rtp received from client
+              const producer = await producerTransport.produce({
+                kind,
+                rtpParameters,
+              });
+
+              //push producer to user producers array
+              echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
+                id: producer.id,
+                appData: { ...appData },
+                kind: producer.kind,
+              });
+
+              callback({ id: producer.id });
+
+              //notify echo members
+              socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
+                kind,
+                appData,
+                producerId: producer.id,
+                memberID: socketWithEcho.id,
+                rtpParameters: producer.rtpParameters,
+              });
+            } catch (err) {
+              console.log(err);
+              callback({ error: err });
+            }
+          }
+        );
+      } catch (err) {
+        callback({ error: err });
+      }
     });
 
     /**
@@ -244,11 +251,12 @@ const io: Server = new Server(server, {
       socketWithEcho.on(
         "connectConsumerTransport",
         async ({ dtlsParameters }, callback) => {
-          const state = await connectTransport(
-            consumerTransport,
-            dtlsParameters
-          );
-          callback({ status: state ? "success" : "failed" });
+          try {
+            await connectTransport(consumerTransport, dtlsParameters);
+            callback({ status: "success" });
+          } catch (err) {
+            callback({ error: err });
+          }
         }
       );
 
@@ -258,9 +266,6 @@ const io: Server = new Server(server, {
         async ({ rtpCapabilities, producerId }, callback) => {
           //create consumer
           try {
-            console.log("consume request");
-            console.log(producerId);
-
             if (
               echos[socketWithEcho.echo].router.canConsume({
                 rtpCapabilities,
@@ -286,21 +291,33 @@ const io: Server = new Server(server, {
         }
       );
     });
+
     //restarting ice on connection failed or disconnected
     socketWithEcho.on("restartIce", async ({ type }, callback) => {
       let transport;
       if (type === "producer") {
         transport =
           echos[socketWithEcho.echo].transports[socketWithEcho.id]
-            .producerTransport;
-      } else if (type === "consumer") {
+            ?.producerTransport;
+      }
+      if (type === "consumer") {
         transport =
           echos[socketWithEcho.echo].transports[socketWithEcho.id]
-            .consumerTransport;
+            ?.consumerTransport;
       }
-      const iceParams = await transport?.restartIce();
 
-      callback({ iceParams });
+      if (!transport) {
+        return callback({ error: "Transport not found" });
+      }
+
+      try {
+        const iceParams = await transport.restartIce();
+        callback({ iceParams });
+        console.log(iceParams);
+      } catch (err) {
+        console.error("ICE restart failed:", err);
+        callback({ error: err });
+      }
     });
 
     //screen sharing

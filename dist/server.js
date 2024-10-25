@@ -140,45 +140,56 @@ const io = new socket_io_1.Server(server, {
          * Producer Transport process
          */
         socketWithEcho.on("createProducerTransport", (callback) => __awaiter(void 0, void 0, void 0, function* () {
-            //create producer transport
-            const { transport, params } = yield (0, helpers_2.createTransport)(echos[socketWithEcho.echo].router);
-            const producerTransport = transport;
-            callback(params);
-            //add the producer transport to echo object
-            echos[socketWithEcho.echo].transports[socketWithEcho.id].producerTransport = producerTransport;
-            //connecting the producer transport
-            socketWithEcho.on("connectProducerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
-                const state = yield (0, helpers_2.connectTransport)(producerTransport, dtlsParameters);
-                callback({ status: state ? "success" : "failed" });
-            }));
-            //starting produce
-            socketWithEcho.on("produce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ kind, rtpParameters, appData }, callback) {
-                try {
-                    //create producer with kind and rtp received from client
-                    const producer = yield producerTransport.produce({
-                        kind,
-                        rtpParameters,
-                    });
-                    callback({ id: producer.id });
-                    //push producer to user producers array
-                    echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
-                        id: producer.id,
-                        appData: Object.assign({}, appData),
-                        kind: producer.kind,
-                    });
-                    //notify echo members
-                    socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
-                        kind,
-                        appData,
-                        producerId: producer.id,
-                        memberID: socketWithEcho.id,
-                        rtpParameters: producer.rtpParameters,
-                    });
-                }
-                catch (err) {
-                    console.log(err);
-                }
-            }));
+            try {
+                //create producer transport
+                const { transport, params } = yield (0, helpers_2.createTransport)(echos[socketWithEcho.echo].router);
+                const producerTransport = transport;
+                callback(params);
+                //add the producer transport to echo object
+                echos[socketWithEcho.echo].transports[socketWithEcho.id].producerTransport = producerTransport;
+                //connecting the producer transport
+                socketWithEcho.on("connectProducerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
+                    try {
+                        yield (0, helpers_2.connectTransport)(producerTransport, dtlsParameters);
+                        callback({ status: "success" });
+                    }
+                    catch (err) {
+                        callback({ error: err });
+                    }
+                }));
+                //starting produce
+                socketWithEcho.on("produce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ kind, rtpParameters, appData }, callback) {
+                    try {
+                        //create producer with kind and rtp received from client
+                        const producer = yield producerTransport.produce({
+                            kind,
+                            rtpParameters,
+                        });
+                        //push producer to user producers array
+                        echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
+                            id: producer.id,
+                            appData: Object.assign({}, appData),
+                            kind: producer.kind,
+                        });
+                        callback({ id: producer.id });
+                        //notify echo members
+                        socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
+                            kind,
+                            appData,
+                            producerId: producer.id,
+                            memberID: socketWithEcho.id,
+                            rtpParameters: producer.rtpParameters,
+                        });
+                    }
+                    catch (err) {
+                        console.log(err);
+                        callback({ error: err });
+                    }
+                }));
+            }
+            catch (err) {
+                callback({ error: err });
+            }
         }));
         /**
          * Consumer Transport process
@@ -192,15 +203,18 @@ const io = new socket_io_1.Server(server, {
             echos[socketWithEcho.echo].transports[socketWithEcho.id].consumerTransport = consumerTransport;
             //connecting the consumer transport
             socketWithEcho.on("connectConsumerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
-                const state = yield (0, helpers_2.connectTransport)(consumerTransport, dtlsParameters);
-                callback({ status: state ? "success" : "failed" });
+                try {
+                    yield (0, helpers_2.connectTransport)(consumerTransport, dtlsParameters);
+                    callback({ status: "success" });
+                }
+                catch (err) {
+                    callback({ error: err });
+                }
             }));
             //starting consume
             socketWithEcho.on("consume", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ rtpCapabilities, producerId }, callback) {
                 //create consumer
                 try {
-                    console.log("consume request");
-                    console.log(producerId);
                     if (echos[socketWithEcho.echo].router.canConsume({
                         rtpCapabilities,
                         producerId,
@@ -225,19 +239,28 @@ const io = new socket_io_1.Server(server, {
         }));
         //restarting ice on connection failed or disconnected
         socketWithEcho.on("restartIce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ type }, callback) {
+            var _b, _c;
             let transport;
             if (type === "producer") {
                 transport =
-                    echos[socketWithEcho.echo].transports[socketWithEcho.id]
-                        .producerTransport;
+                    (_b = echos[socketWithEcho.echo].transports[socketWithEcho.id]) === null || _b === void 0 ? void 0 : _b.producerTransport;
             }
-            else if (type === "consumer") {
+            if (type === "consumer") {
                 transport =
-                    echos[socketWithEcho.echo].transports[socketWithEcho.id]
-                        .consumerTransport;
+                    (_c = echos[socketWithEcho.echo].transports[socketWithEcho.id]) === null || _c === void 0 ? void 0 : _c.consumerTransport;
             }
-            const iceParams = yield (transport === null || transport === void 0 ? void 0 : transport.restartIce());
-            callback({ iceParams });
+            if (!transport) {
+                return callback({ error: "Transport not found" });
+            }
+            try {
+                const iceParams = yield transport.restartIce();
+                callback({ iceParams });
+                console.log(iceParams);
+            }
+            catch (err) {
+                console.error("ICE restart failed:", err);
+                callback({ error: err });
+            }
         }));
         //screen sharing
         socketWithEcho.on("screenShare", (opts) => {

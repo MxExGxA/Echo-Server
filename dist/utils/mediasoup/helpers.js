@@ -88,12 +88,6 @@ exports.createTransport = createTransport;
  * @param dtlsParameters
  */
 const connectTransport = (transport, dtlsParameters) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        yield transport.connect({ dtlsParameters });
-        return true;
-    }
-    catch (err) {
-        return false;
-    }
+    yield transport.connect({ dtlsParameters });
 });
 exports.connectTransport = connectTransport;
