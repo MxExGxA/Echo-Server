@@ -143,51 +143,63 @@ const io = new socket_io_1.Server(server, {
             try {
                 //create producer transport
                 const { transport, params } = yield (0, helpers_2.createTransport)(echos[socketWithEcho.echo].router);
-                const producerTransport = transport;
-                callback(params);
                 //add the producer transport to echo object
-                echos[socketWithEcho.echo].transports[socketWithEcho.id].producerTransport = producerTransport;
-                //connecting the producer transport
-                socketWithEcho.on("connectProducerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
-                    try {
-                        yield (0, helpers_2.connectTransport)(producerTransport, dtlsParameters);
-                        callback({ status: "success" });
-                    }
-                    catch (err) {
-                        callback({ error: err });
-                    }
-                }));
-                //starting produce
-                socketWithEcho.on("produce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ kind, rtpParameters, appData }, callback) {
-                    try {
-                        //create producer with kind and rtp received from client
-                        const producer = yield producerTransport.produce({
-                            kind,
-                            rtpParameters,
-                        });
-                        //push producer to user producers array
-                        echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
-                            id: producer.id,
-                            appData: Object.assign({}, appData),
-                            kind: producer.kind,
-                        });
-                        callback({ id: producer.id });
-                        //notify echo members
-                        socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
-                            kind,
-                            appData,
-                            producerId: producer.id,
-                            memberID: socketWithEcho.id,
-                            rtpParameters: producer.rtpParameters,
-                        });
-                    }
-                    catch (err) {
-                        console.log(err);
-                        callback({ error: err });
-                    }
-                }));
+                echos[socketWithEcho.echo].transports[socketWithEcho.id].producerTransport = transport;
+                callback(params);
             }
             catch (err) {
+                callback({ error: err });
+            }
+        }));
+        //connecting the producer transport
+        socketWithEcho.on("connectProducerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
+            try {
+                const transport = echos[socketWithEcho.echo].transports[socketWithEcho.id]
+                    .producerTransport;
+                if (!transport) {
+                    callback({ error: "no producer transport found" });
+                    return;
+                }
+                yield (0, helpers_2.connectTransport)(transport, dtlsParameters);
+                callback({ status: "success" });
+            }
+            catch (err) {
+                callback({ error: err });
+            }
+        }));
+        //starting produce
+        socketWithEcho.on("produce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ kind, rtpParameters, appData }, callback) {
+            try {
+                const transport = echos[socketWithEcho.echo].transports[socketWithEcho.id]
+                    .producerTransport;
+                if (!transport) {
+                    callback({ error: "no producer transport found" });
+                    return;
+                }
+                //create producer with kind and rtp received from client
+                const producer = yield transport.produce({
+                    kind,
+                    rtpParameters,
+                    paused: false,
+                });
+                //push producer to user producers array
+                echos[socketWithEcho.echo].producers[socketWithEcho.id].push({
+                    id: producer.id,
+                    appData: Object.assign({}, appData),
+                    kind: producer.kind,
+                });
+                callback({ id: producer.id });
+                //notify echo members
+                socketWithEcho.to(socketWithEcho.echo).emit("incommingMedia", {
+                    kind,
+                    appData,
+                    producerId: producer.id,
+                    memberID: socketWithEcho.id,
+                    rtpParameters: producer.rtpParameters,
+                });
+            }
+            catch (err) {
+                console.log(err);
                 callback({ error: err });
             }
         }));
@@ -195,47 +207,62 @@ const io = new socket_io_1.Server(server, {
          * Consumer Transport process
          */
         socketWithEcho.on("createConsumerTransport", (callback) => __awaiter(void 0, void 0, void 0, function* () {
-            //create consumer transport
-            const { transport, params } = yield (0, helpers_2.createTransport)(echos[socketWithEcho.echo].router);
-            const consumerTransport = transport;
-            callback(params);
-            //add the consumer transport to echo object
-            echos[socketWithEcho.echo].transports[socketWithEcho.id].consumerTransport = consumerTransport;
-            //connecting the consumer transport
-            socketWithEcho.on("connectConsumerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
-                try {
-                    yield (0, helpers_2.connectTransport)(consumerTransport, dtlsParameters);
-                    callback({ status: "success" });
+            try {
+                //create consumer transport
+                const { transport, params } = yield (0, helpers_2.createTransport)(echos[socketWithEcho.echo].router);
+                //add the consumer transport to echo object
+                echos[socketWithEcho.echo].transports[socketWithEcho.id].consumerTransport = transport;
+                callback(params);
+            }
+            catch (err) {
+                callback({ error: err });
+            }
+        }));
+        //connecting the consumer transport
+        socketWithEcho.on("connectConsumerTransport", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ dtlsParameters }, callback) {
+            try {
+                const transport = echos[socketWithEcho.echo].transports[socketWithEcho.id]
+                    .consumerTransport;
+                if (!transport) {
+                    callback({ error: "no consumer transport found" });
+                    return;
                 }
-                catch (err) {
-                    callback({ error: err });
-                }
-            }));
-            //starting consume
-            socketWithEcho.on("consume", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ rtpCapabilities, producerId }, callback) {
-                //create consumer
-                try {
-                    if (echos[socketWithEcho.echo].router.canConsume({
-                        rtpCapabilities,
-                        producerId,
-                    })) {
-                        const consumer = yield consumerTransport.consume({
-                            producerId,
-                            rtpCapabilities,
-                            paused: false,
-                        });
-                        callback({
-                            consumerId: consumer.id,
-                            producerId,
-                            kind: consumer.kind,
-                            rtpParameters: consumer.rtpParameters,
-                        });
+                yield (0, helpers_2.connectTransport)(transport, dtlsParameters);
+                callback({ status: "success" });
+            }
+            catch (err) {
+                callback({ error: err });
+            }
+        }));
+        //starting consume
+        socketWithEcho.on("consume", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ rtpCapabilities, producerId }, callback) {
+            //create consumer
+            try {
+                if (echos[socketWithEcho.echo].router.canConsume({
+                    rtpCapabilities,
+                    producerId,
+                })) {
+                    const transport = echos[socketWithEcho.echo].transports[socketWithEcho.id]
+                        .consumerTransport;
+                    if (!transport) {
+                        callback({ error: "no consumer transport found" });
+                        return;
                     }
+                    const consumer = yield transport.consume({
+                        producerId,
+                        rtpCapabilities,
+                    });
+                    callback({
+                        consumerId: consumer.id,
+                        producerId,
+                        kind: consumer.kind,
+                        rtpParameters: consumer.rtpParameters,
+                    });
                 }
-                catch (err) {
-                    callback({ error: err });
-                }
-            }));
+            }
+            catch (err) {
+                callback({ error: err });
+            }
         }));
         //restarting ice on connection failed or disconnected
         socketWithEcho.on("restartIce", (_a, callback_1) => __awaiter(void 0, [_a, callback_1], void 0, function* ({ type }, callback) {
@@ -255,10 +282,8 @@ const io = new socket_io_1.Server(server, {
             try {
                 const iceParams = yield transport.restartIce();
                 callback({ iceParams });
-                console.log(iceParams);
             }
             catch (err) {
-                console.error("ICE restart failed:", err);
                 callback({ error: err });
             }
         }));
