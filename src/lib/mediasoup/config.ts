@@ -1,6 +1,9 @@
 import * as os from "os";
 import { types as mediaSoupTypes } from "mediasoup";
-import { TransportListenInfo } from "mediasoup/node/lib/types";
+import {
+  TransportListenInfo,
+  WebRtcTransportOptions,
+} from "mediasoup/node/lib/types";
 
 export const config = {
   listenIp: "0.0.0.0",
@@ -58,6 +61,6 @@ export const config = {
           credential: "test123",
         },
       ],
-    },
+    } as WebRtcTransportOptions,
   },
 };
