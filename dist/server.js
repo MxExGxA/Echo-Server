@@ -251,7 +251,13 @@ const io = new socket_io_1.Server(server, {
                     const consumer = yield transport.consume({
                         producerId,
                         rtpCapabilities,
+                        paused: true,
                     });
+                    socketWithEcho.on("resumeConsumer", (opts) => __awaiter(void 0, void 0, void 0, function* () {
+                        if (opts.id === consumer.id) {
+                            yield consumer.resume();
+                        }
+                    }));
                     callback({
                         consumerId: consumer.id,
                         producerId,

@@ -317,6 +317,13 @@ const io: Server = new Server(server, {
             const consumer = await transport.consume({
               producerId,
               rtpCapabilities,
+              paused: true,
+            });
+
+            socketWithEcho.on("resumeConsumer", async (opts) => {
+              if (opts.id === consumer.id) {
+                await consumer.resume();
+              }
             });
 
             callback({
